@@ -1,0 +1,74 @@
+server {
+    listen 80;
+    server_name "~^www\.(.*)$" ;
+    return 301 http://$1$request_uri ;
+}
+
+server {
+    listen  80 default_server;
+
+    root /var/www/public;
+    index index.php index.html index.htm;
+
+    server_name docker;
+
+    access_log /var/log/nginx/site-access.log;
+    error_log  /var/log/nginx/site-error.log error;
+
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+    
+    sendfile on;
+    client_max_body_size 100m;
+
+    charset utf-8;
+
+    location / {
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    }
+
+    # pass the PHP scripts to php5-fpm
+    # Note: \.php$ is susceptible to file upload attacks
+    # Consider using: "location ~ ^/(index|app|app_dev|config)\.php(/|$) {"
+    location ~ \.php$ {
+        fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+        if (!-f $document_root$fastcgi_script_name) {
+            return 404;
+        }
+     
+        #fastcgi_pass unix:/var/run/php5-fpm.sock;
+        fastcgi_pass FPM_PORT_9000_TCP_ADDR:9000;
+        fastcgi_index index.php;
+        include fastcgi_params;
+
+        fastcgi_param   SCRIPT_FILENAME    $document_root$fastcgi_script_name;
+        fastcgi_param   SCRIPT_NAME        $fastcgi_script_name;
+        
+        fastcgi_buffer_size 128k;
+        fastcgi_buffers 256 16k;
+        fastcgi_busy_buffers_size 256k;
+        fastcgi_temp_file_write_size 256k;
+
+        fastcgi_intercept_errors off;
+        include fastcgi.conf;
+        fastcgi_param HTTPS off;
+        fastcgi_read_timeout 600;
+
+        # This file is present on Debian systems..
+        include fastcgi_params;
+    }
+
+    # Client Caching
+    location ~* \.(jpg|jpeg|gif|png|css|js|ico|xml)$ {
+        access_log        off;
+        log_not_found     off;
+        expires           30d;
+    }
+
+    # Deny .htaccess file access
+    location ~ /\.ht {
+        deny all;
+    }
+}
