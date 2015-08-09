@@ -9,19 +9,11 @@ fi
 
 
 # Replace with linked container env var
-sed -i "s/FPM_PORT_9000_TCP_ADDR/$FPM_PORT_9000_TCP_ADDR/" /etc/nginx/sites-available/default
+sed -i "s/FPM_PORT_9000_TCP_ADDR/$FPM_PORT_9000_TCP_ADDR/" /etc/nginx/sites-enabled/default
 
-sed -i "s/DB_HOST=.*/DB_HOST=MYSQL_PORT_3306_TCP_ADDR/" /var/www/.env
-sed -i "s/MYSQL_PORT_3306_TCP_ADDR/$MYSQL_PORT_3306_TCP_ADDR:$MYSQL_PORT_3306_TCP_PORT/" /var/www/.env
-
-sed -i "s/beanstalkd_IP=.*/beanstalkd_IP=BS_PORT_11300_TCP_ADDR/" /var/www/.env
-sed -i "s/BS_PORT_11300_TCP_ADDR/$BS_PORT_11300_TCP_ADDR/" /var/www/.env
-
-sudo chcon -Rt svirt_sandbox_file_t /var/www/mysql
-
-ls -ald /var/lib/nginx
-mkdir /var/lib/nginx/body
-chmod 2755 /var/www
+#ls -ald /var/lib/nginx
+#mkdir /var/lib/nginx/body
+#chmod 2755 /var/www
 
 
 # Start nginx

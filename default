@@ -5,25 +5,38 @@ server {
 }
 
 server {
-    listen  80 default_server;
+    listen 80 default_server backlog=2048;
+    listen [::]:80 default_server ipv6only=on;
 
     root /var/www/public;
     index index.php index.html index.htm;
 
-    server_name docker;
+    # Make site accessible from http://localhost/
+    server_name localhost;
 
-    access_log /var/log/nginx/site-access.log;
+    #access_log /var/log/nginx/site-access.log;
+    access_log off;
+    log_not_found off;
     error_log  /var/log/nginx/site-error.log error;
 
     location = /favicon.ico { access_log off; log_not_found off; }
     location = /robots.txt  { access_log off; log_not_found off; }
     
+    client_max_body_size 2M;
+    client_body_buffer_size 1m;
+    client_body_timeout 15;
+    client_header_timeout 15;
+    keepalive_timeout 2 2;
+    send_timeout 15;
     sendfile on;
-    client_max_body_size 100m;
+    tcp_nopush on;
+    tcp_nodelay on;
 
     charset utf-8;
 
     location / {
+        try_files $uri $uri/ /index.php?$query_string;
+
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
@@ -34,6 +47,8 @@ server {
     # Consider using: "location ~ ^/(index|app|app_dev|config)\.php(/|$) {"
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+?\.php)(/.*)$;
+        # NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
+
         if (!-f $document_root$fastcgi_script_name) {
             return 404;
         }
@@ -46,29 +61,35 @@ server {
         fastcgi_param   SCRIPT_FILENAME    $document_root$fastcgi_script_name;
         fastcgi_param   SCRIPT_NAME        $fastcgi_script_name;
         
-        fastcgi_buffer_size 128k;
-        fastcgi_buffers 256 16k;
-        fastcgi_busy_buffers_size 256k;
-        fastcgi_temp_file_write_size 256k;
+        fastcgi_buffer_size 32k;
+        fastcgi_buffers 4 32k;
+        fastcgi_busy_buffers_size 64k;
+        fastcgi_temp_file_write_size 64k;
 
         fastcgi_intercept_errors off;
-        include fastcgi.conf;
+        # include fastcgi.conf;
         fastcgi_param HTTPS off;
-        fastcgi_read_timeout 600;
+        fastcgi_read_timeout 100;
 
-        # This file is present on Debian systems..
-        include fastcgi_params;
+        fastcgi_cache_bypass 1;
+        fastcgi_cache microcache;
+        fastcgi_cache_key $scheme$host$request_uri$request_method;
+        fastcgi_cache_valid any 8m;
+        fastcgi_cache_bypass $http_pragma;
+        fastcgi_cache_use_stale updating error timeout invalid_header http_500;
     }
 
     # Client Caching
     location ~* \.(jpg|jpeg|gif|png|css|js|ico|xml)$ {
-        access_log        off;
-        log_not_found     off;
-        expires           30d;
+        access_log          off;
+        log_not_found       off;
+        expires             30d;
     }
 
     # Deny .htaccess file access
     location ~ /\.ht {
-        deny all;
+        access_log          off;
+        log_not_found       off;
+        deny                all;
     }
 }
