@@ -35,48 +35,9 @@ server {
     charset utf-8;
 
     location / {
-        try_files $uri $uri/ /index.php?$query_string;
-
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-    }
-
-    # pass the PHP scripts to php5-fpm
-    # Note: \.php$ is susceptible to file upload attacks
-    # Consider using: "location ~ ^/(index|app|app_dev|config)\.php(/|$) {"
-    location ~ \.php$ {
-        fastcgi_split_path_info ^(.+?\.php)(/.*)$;
-        # NOTE: You should have "cgi.fix_pathinfo = 0;" in php.ini
-
-        if (!-f $document_root$fastcgi_script_name) {
-            return 404;
-        }
-     
-        #fastcgi_pass unix:/var/run/php5-fpm.sock;
-        fastcgi_pass FPM_PORT_9000_TCP_ADDR:9000;
-        fastcgi_index index.php;
-        include fastcgi_params;
-
-        fastcgi_param   SCRIPT_FILENAME    $document_root$fastcgi_script_name;
-        fastcgi_param   SCRIPT_NAME        $fastcgi_script_name;
-        
-        fastcgi_buffer_size 32k;
-        fastcgi_buffers 4 32k;
-        fastcgi_busy_buffers_size 64k;
-        fastcgi_temp_file_write_size 64k;
-
-        fastcgi_intercept_errors off;
-        # include fastcgi.conf;
-        fastcgi_param HTTPS off;
-        fastcgi_read_timeout 100;
-
-        fastcgi_cache_bypass 1;
-        fastcgi_cache microcache;
-        fastcgi_cache_key $scheme$host$request_uri$request_method;
-        fastcgi_cache_valid any 8m;
-        fastcgi_cache_bypass $http_pragma;
-        fastcgi_cache_use_stale updating error timeout invalid_header http_500;
     }
 
     # Client Caching
