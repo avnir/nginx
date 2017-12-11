@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+
+PUID=${PUID:-911}
+PGID=${PGID:-911}
+
+
+if [ ! "$(id -u www-data)" -eq "$PUID" ]; then usermod -o -u "$PUID" www-data ; fi
+if [ ! "$(id -g www-data)" -eq "$PGID" ]; then groupmod -o -g "$PGID" www-data ; fi
+
+
+# Start nginx
+nginx -g 'daemon off;'
